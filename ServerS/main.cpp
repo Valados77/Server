@@ -8,7 +8,7 @@ int main(int arcg, char* argv[]) {
 	//WSAStartup
 	WSAData wsaData;
 	WORD DLLVersion = MAKEWORD(2, 1);
-	if (WSAStartup(DLLVersion, &wsaData) != 0) 
+	if (WSAStartup(DLLVersion, &wsaData) != 0)
 	{
 		std::cout << "Error#1\n";
 		exit(1);
