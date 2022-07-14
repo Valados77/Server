@@ -1,32 +1,48 @@
-#pragma comment(lib, "ws2_32.lib")
-#include <WinSock2.h>
 #include <iostream>
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include <stdio.h>
+#include <vector>
 
-#pragma warning(disable: 4996)
+#pragma comment(lib, "Ws2_32.lib")
 
-int main(int arcg, char* argv[]) {
-	//WSAStartup
-	WSAData wsaData;
-	WORD DLLVersion = MAKEWORD(2, 1);
-	if (WSAStartup(DLLVersion, &wsaData) != 0)
-	{
-		std::cout << "Error#1\n";
-		exit(1);
-	}
-
-	SOCKADDR_IN addr;
-	int sizeofaddr = sizeof(addr);
-	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-	addr.sin_port = htons(1111);
-	addr.sin_family = AF_INET;
-
-	SOCKET Connection = socket(AF_INET, SOCK_STREAM, NULL);
-	if (connect(Connection, (SOCKADDR*)&addr, sizeof(addr)) != 0)
-	{
-		std::cout << "Error: faild connect to server.\n";
+int main() {
+	WSADATA wsData;
+	if (WSAStartup(MAKEWORD(2, 2), &wsData) != 0) {
+		std::cout << "Error WinSock version initializaion #" << WSAGetLastError();
 		return 1;
 	}
-	std::cout << "Connected!\n";
+	else	std::cout << "WinSock initialization is OK" << '\n';
+
+	SOCKET ClientSock = socket(AF_INET, SOCK_STREAM, 0);
+	if (ClientSock == INVALID_SOCKET) {
+		std::cout << "Error initialization socket # " << WSAGetLastError() << '\n';
+		closesocket(ClientSock);
+		WSACleanup();
+		return 1;
+	}
+	else	std::cout << "Server socket initialization is OK" << '\n';
+
+	in_addr ip_to_num;
+	if (inet_pton(AF_INET, "127.0.0.1", &ip_to_num) <= 0) {
+		std::cout << "Error in IP translation to special numeric format" << '\n';
+		return 1;
+	}
+
+	sockaddr_in servInfo;
+	ZeroMemory(&servInfo, sizeof(servInfo));
+	servInfo.sin_family = AF_INET;
+	servInfo.sin_addr = ip_to_num;
+	servInfo.sin_port = htons(1234);
+
+	if (connect(ClientSock, (sockaddr*)&servInfo, sizeof(servInfo)) != 0) {
+		std::cout << "Connection to Server is FAILED. Error # " << WSAGetLastError() << '\n';
+		closesocket(ClientSock);
+		WSACleanup();
+		return 1;
+	}
+	else std::cout << "Connection established SUCCESSFULLY. Ready to send a message to Server" << '\n';
+
 	system("pause");
 	return 0;
 }
