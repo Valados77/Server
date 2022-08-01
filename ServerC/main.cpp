@@ -3,12 +3,42 @@
 #include <WS2tcpip.h>
 #include <stdio.h>
 #include <vector>
+#include <fstream>
 
 #pragma comment(lib, "Ws2_32.lib")
 
 //const char SERVER_IP[] = "";					// Enter IPv4 address of Server
 //const short SERVER_PORT_NUM = 0;				// Enter Listening port on Server side
 const short BUFF_SIZE = 1024;
+
+void RecvFile(SOCKET* sock) {
+	char file_size_str[16];
+	char file_name[32];
+
+	recv(*sock, file_size_str, 16, 0);
+	int file_size = atoi(file_size_str);
+	char* bytes = new char[file_size];
+
+	recv(*sock, file_name, 32, 0);
+
+	std::fstream file;
+	file.open(file_name, std::ios_base::out | std::ios_base::binary);
+
+	std::cout << "size: " << file_size << '\n';
+	std::cout << "name: " << file_name << '\n';
+
+	if (file.is_open()) {
+		recv(*sock, bytes, file_size, 0);
+		std::cout << "data: " << bytes << '\n';
+
+		file.write(bytes, file_size);
+		std::cout << "ok save\n";
+	}
+	else std::cout << "Error file open\n";
+
+	delete[] bytes;
+	file.close();
+}
 
 int main() {
 	WSADATA wsData;
@@ -45,45 +75,49 @@ int main() {
 		WSACleanup();
 		return 1;
 	}
-	else std::cout << "Connection established SUCCESSFULLY. Ready to send a message to Server" << '\n';
-
-	std::vector <char> servBuff(BUFF_SIZE), clientBuff(BUFF_SIZE);							// Buffers for sending and receiving data
-	short packet_size = 0;												// The size of sending / receiving packet in bytes
-
-	while (true) {
-
-		std::cout << "Your (Client) message to Server: ";
-		fgets(clientBuff.data(), clientBuff.size(), stdin);
-
-		// Check whether client like to stop chatting 
-		if (clientBuff[0] == 'x' && clientBuff[1] == 'x' && clientBuff[2] == 'x') {
-			shutdown(ClientSock, SD_BOTH);
-			closesocket(ClientSock);
-			WSACleanup();
-			return 0;
-		}
-
-		packet_size = send(ClientSock, clientBuff.data(), clientBuff.size(), 0);
-
-		if (packet_size == SOCKET_ERROR) {
-			std::cout << "Can't send message to Server. Error # " << WSAGetLastError() << '\n';
-			closesocket(ClientSock);
-			WSACleanup();
-			return 1;
-		}
-
-		packet_size = recv(ClientSock, servBuff.data(), servBuff.size(), 0);
-
-		if (packet_size == SOCKET_ERROR) {
-			std::cout << "Can't receive message from Server. Error # " << WSAGetLastError() << '\n';
-			closesocket(ClientSock);
-			WSACleanup();
-			return 1;
-		}
-		else
-			std::cout << "Server message: " << servBuff.data() << '\n';
-
+	else {
+		std::cout << "Connection established SUCCESSFULLY. Ready to send a message to Server" << '\n';
+		RecvFile(&ClientSock);
 	}
+
+
+	//std::vector <char> servBuff(BUFF_SIZE), clientBuff(BUFF_SIZE);							// Buffers for sending and receiving data
+	//short packet_size = 0;												// The size of sending / receiving packet in bytes
+
+	//while (true) {
+
+	//	std::cout << "Your (Client) message to Server: ";
+	//	fgets(clientBuff.data(), clientBuff.size(), stdin);
+
+	//	// Check whether client like to stop chatting 
+	//	if (clientBuff[0] == 'x' && clientBuff[1] == 'x' && clientBuff[2] == 'x') {
+	//		shutdown(ClientSock, SD_BOTH);
+	//		closesocket(ClientSock);
+	//		WSACleanup();
+	//		return 0;
+	//	}
+
+	//	packet_size = send(ClientSock, clientBuff.data(), clientBuff.size(), 0);
+
+	//	if (packet_size == SOCKET_ERROR) {
+	//		std::cout << "Can't send message to Server. Error # " << WSAGetLastError() << '\n';
+	//		closesocket(ClientSock);
+	//		WSACleanup();
+	//		return 1;
+	//	}
+
+	//	packet_size = recv(ClientSock, servBuff.data(), servBuff.size(), 0);
+
+	//	if (packet_size == SOCKET_ERROR) {
+	//		std::cout << "Can't receive message from Server. Error # " << WSAGetLastError() << '\n';
+	//		closesocket(ClientSock);
+	//		WSACleanup();
+	//		return 1;
+	//	}
+	//	else
+	//		std::cout << "Server message: " << servBuff.data() << '\n';
+
+	//}
 
 	closesocket(ClientSock);
 	WSACleanup();

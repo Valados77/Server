@@ -1,14 +1,39 @@
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+
 #include <iostream>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include <stdio.h>
+#include <string>
 #include <vector>
+#include <fstream>
+#include <experimental/filesystem>
 
 #pragma comment(lib, "Ws2_32.lib")
 
 //const char IP_SERV[] = "";			// Enter local Server IP address
 //const int PORT_NUM = 0;				// Enter Open working server port
 const short BUFF_SIZE = 1024;
+
+void SendFile(SOCKET* sock, const std::string& file_name) {
+	std::fstream file;
+	file.open(file_name, std::ios_base::in | std::ios_base::binary);
+	if (file.is_open()) {
+		int file_size = std::experimental::filesystem::file_size(file_name) + 1;
+		char* bytes = new char[file_size];
+		file.read(bytes, file_size);
+
+		std::cout << "size: " << file_size << std::endl;
+		std::cout << "name: " << file_name << std::endl;
+		std::cout << "data: " << bytes << std::endl;
+
+		send(*sock, std::to_string(file_size).c_str(), 16, 0);
+		send(*sock, file_name.c_str(), 32, 0);
+		send(*sock, bytes, file_size, 0);
+	}
+	else std::cout << "Error file open\n";
+		file.close();
+}
 
 int main() {
 	WSADATA wsData; // структура содержащая детали реализации Windows Sockets
@@ -68,38 +93,51 @@ int main() {
 		WSACleanup();
 		return 1;
 	}
-	else	std::cout << "Connection to a client established successfully" << '\n';
-
-	std::vector <char> servBuff(BUFF_SIZE), clientBuff(BUFF_SIZE);							// Creation of buffers for sending and receiving data
-	short packet_size = 0;												// The size of sending / receiving packet in bytes
-
-	while (true) {
-		packet_size = recv(ClientConn, servBuff.data(), servBuff.size(), 0);					// Receiving packet from client. Program is waiting (system pause) until receive
-		std::cout << "Client's message: " << servBuff.data() << '\n';
-
-		std::cout << "Your (host) message: ";
-		fgets(clientBuff.data(), clientBuff.size(), stdin);
-
-		// Check whether server would like to stop chatting 
-		if (clientBuff[0] == 'x' && clientBuff[1] == 'x' && clientBuff[2] == 'x') {
-			shutdown(ClientConn, SD_BOTH);
-			closesocket(ServSock);
-			closesocket(ClientConn);
-			WSACleanup();
-			return 0;
-		}
-
-		packet_size = send(ClientConn, clientBuff.data(), clientBuff.size(), 0);
-
-		if (packet_size == SOCKET_ERROR) {
-			std::cout << "Can't send message to Client. Error # " << WSAGetLastError() << '\n';
-			closesocket(ServSock);
-			closesocket(ClientConn);
-			WSACleanup();
-			return 1;
-		}
-
+	else {
+		std::cout << "Connection to a client established successfully" << '\n';
+		std::string path;
+		std::cin >> path;
+		SendFile(&ClientConn, path);
 	}
+
+	//std::vector <char> servBuff(BUFF_SIZE), clientBuff(BUFF_SIZE);							// Creation of buffers for sending and receiving data
+	//short packet_size = 0;												// The size of sending / receiving packet in bytes
+
+	//while (true) {
+	//	packet_size = recv(ClientConn, servBuff.data(), servBuff.size(), 0);					// Receiving packet from client. Program is waiting (system pause) until receive
+	//	std::cout << "Client's message: " << servBuff.data() << '\n';
+
+	//	std::cout << "Your (host) message: ";
+	//	fgets(clientBuff.data(), clientBuff.size(), stdin);
+
+	//	// Check whether server would like to stop chatting 
+	//	if (clientBuff[0] == 'x' && clientBuff[1] == 'x' && clientBuff[2] == 'x') {
+	//		shutdown(ClientConn, SD_BOTH);
+	//		closesocket(ServSock);
+	//		closesocket(ClientConn);
+	//		WSACleanup();
+	//		return 0;
+	//	}
+	//	else if (clientBuff[0] == 'p' && clientBuff[1] == 'n' && clientBuff[2] == 'j') {
+
+	//		shutdown(ClientConn, SD_BOTH);
+	//		closesocket(ServSock);
+	//		closesocket(ClientConn);
+	//		WSACleanup();
+	//		return 0;
+	//	}
+
+	//	packet_size = send(ClientConn, clientBuff.data(), clientBuff.size(), 0);
+
+	//	if (packet_size == SOCKET_ERROR) {
+	//		std::cout << "Can't send message to Client. Error # " << WSAGetLastError() << '\n';
+	//		closesocket(ServSock);
+	//		closesocket(ClientConn);
+	//		WSACleanup();
+	//		return 1;
+	//	}
+
+	//}
 
 	closesocket(ServSock);
 	closesocket(ClientConn);
