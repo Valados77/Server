@@ -1,0 +1,7 @@
+﻿  main.cpp
+D:\WORK\C++\other_C++\Server\ServerS\main.cpp(22,17): warning C4244: инициализация: преобразование "uintmax_t" в "int", возможна потеря данных
+  Создание кода
+  Previous IPDB not found, fall back to full compilation.
+  All 349 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Создание кода завершено
+  ServerS.vcxproj -> D:\WORK\C++\other_C++\Server\Release\ServerS.exe
